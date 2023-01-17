@@ -21,6 +21,7 @@ class Entries:
     def __init__(self):
         self.entries_list = []
         self.parent_window = None
+        self.focus_entry = None
 
     def set_parent_window(self, parent_window):
         self.parent_window = parent_window
@@ -29,6 +30,8 @@ class Entries:
     def add_entry(self):
         new_entry = Entry(self.parent_window)
         new_entry.icursor(0)
+        new_entry.bind('<FocusIn>', self.in_focus)
+        new_entry.bind('<FocusOut>', self.out_focus)
         new_entry.focus()
         new_entry.pack()
         plot_button = self.parent_window.get_button_by_name('plot')
@@ -37,6 +40,25 @@ class Entries:
         self.parent_window.add_button('plot', 'Plot', 'plot', hot_key='<Return>')
         self.entries_list.append(new_entry)
 
+
+    def delite_entry(self, entry):
+        plot_button = self.parent_window.get_button_by_name('plot')
+        if plot_button:
+            plot_button.pack_forget()
+        self.parent_window.add_button('plot', 'Plot', 'plot', hot_key='<Return>')
+        if entry not in self.entries_list:
+            return
+
+        else:
+            self.entries_list.remove(entry)
+            entry.destroy()
+
+
+    def in_focus(self, event):
+        self.focus_entry = event.widget
+
+    def out_focus(self, event):
+        self.focus_entry = None
 
 # class for plotting (класс для построения графиков)
 class Plotter:
@@ -153,6 +175,11 @@ class Commands:
         self.__forget_navigation()
         self.parent_window.entries.add_entry()
 
+    def delite_func(self, *args, **kwargs):
+        self.__forget_canvas()
+        self.__forget_navigation()
+        self.parent_window.entries.delite_entry(self.parent_window.entries.focus_entry)
+
     def save_as(self):
         self._state.save_state()
         return self
@@ -247,11 +274,13 @@ if __name__ == "__main__":
     # command's registration (регистрация команд)
     commands_main.add_command('plot', commands_main.plot)
     commands_main.add_command('add_func', commands_main.add_func)
+    commands_main.add_command('delite_func', commands_main.delite_func)
     commands_main.add_command('save_as', commands_main.save_as)
     # init app (создаем экземпляр приложения)
     app = App(buttons_main, plotter_main, commands_main, entries_main)
     # init add func button (добавляем кнопку добавления новой функции)
     app.add_button('add_func', 'Добавить функцию', 'add_func', hot_key='<Control-a>')
+    app.add_button('delite_func', 'Удалить функцию', 'delite_func', hot_key='<Control-d>')
     # init first entry (создаем первое поле ввода)
     entries_main.add_entry()
     app.create_menu()
